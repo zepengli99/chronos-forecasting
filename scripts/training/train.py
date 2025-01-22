@@ -153,6 +153,7 @@ def get_next_path(
 
 
 def load_model(
+    lora = False,
     model_id="google/t5-efficient-tiny",
     model_type="seq2seq",
     vocab_size=4096,
@@ -189,6 +190,9 @@ def load_model(
     model.config.pad_token_id = model.generation_config.pad_token_id = pad_token_id
     model.config.eos_token_id = model.generation_config.eos_token_id = eos_token_id
 
+    # Lora 
+    # if lora:
+    #     return get_lora_model(model)
     return model
 
 
@@ -504,6 +508,7 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
 def main(
     training_data_paths: str,
     probability: Optional[str] = None,
+    lora = False,
     context_length: int = 512,
     prediction_length: int = 64,
     min_past: int = 64,
@@ -614,6 +619,7 @@ def main(
     log_on_main("Initializing model", logger)
 
     model = load_model(
+        lora = lora,
         model_id=model_id,
         model_type=model_type,
         vocab_size=n_tokens,
