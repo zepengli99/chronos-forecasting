@@ -4,6 +4,7 @@ training_data_paths:
 # probability:
 # - 0.9
 # - 0.1
+lora: false
 context_length: 512
 prediction_length: 64
 min_past: 60
