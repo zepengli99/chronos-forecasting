@@ -46,6 +46,8 @@ from gluonts.transform import (
 
 from chronos import ChronosConfig, ChronosTokenizer
 
+from transformers import AutoModel
+from peft import LoraConfig, get_peft_model
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -191,8 +193,27 @@ def load_model(
     model.config.eos_token_id = model.generation_config.eos_token_id = eos_token_id
 
     # Lora 
-    # if lora:
-    #     return get_lora_model(model)
+    def get_lora_model(model):
+
+        # freezing weights
+        for param in model.parameters():
+            param.requires_grad = False
+
+        # configuring LoRA
+        lora_config = LoraConfig(
+            r=4,  # dimension of the LoRa matrix to be fine-tunned (higher values -> more expressive adaptations)
+            lora_alpha=32, # regulates the impact of the weights of the lora matrix on the predictions (higher values -> higher impact relative to the original weights)
+            lora_dropout=0.1,
+            bias = "none"
+        )
+
+        # applying LoRA
+        lora_model = get_peft_model(model, lora_config)
+
+        return lora_model
+
+    if lora:
+        return get_lora_model(model)
     return model
 
 
