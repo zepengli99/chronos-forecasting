@@ -32,10 +32,13 @@ def to_gluonts_univariate(hf_dataset: datasets.Dataset):
         if isinstance(hf_dataset.features[col], datasets.Sequence)
     ]
     series_fields.remove("timestamp")
-    dataset_length = hf_dataset.info.splits["train"].num_examples * len(series_fields)
+    dataset_length = hf_dataset.info.splits["test"].num_examples * len(series_fields)
 
     # Assumes that all time series in the dataset have the same frequency
-    dataset_freq = pd.DatetimeIndex(hf_dataset[0]["timestamp"]).to_period()[0].freqstr
+    # dataset_freq = pd.DatetimeIndex(hf_dataset[0]["timestamp"]).to_period()[0].freqstr
+    period = pd.DatetimeIndex(hf_dataset[0]["timestamp"]).to_period(freq='15T')
+    dataset_freq = period[0].freqstr
+
 
     gts_dataset = []
     for hf_entry in hf_dataset:
@@ -66,7 +69,7 @@ def load_and_split_dataset(backtest_config: dict):
     trust_remote_code = True if hf_repo == "autogluon/chronos_datasets_extra" else False
 
     ds = datasets.load_dataset(
-        hf_repo, dataset_name, split="train", trust_remote_code=trust_remote_code
+        hf_repo, "default", split="test", trust_remote_code=trust_remote_code
     )
     ds.set_format("numpy")
 

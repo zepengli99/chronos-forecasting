@@ -1,0 +1,5 @@
+- name: default
+  hf_repo: fm11/project_nlp_datasets
+  offset: -96
+  prediction_length: 24
+  num_rolls: 1
