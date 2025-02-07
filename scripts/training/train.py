@@ -14,7 +14,6 @@ from pathlib import Path
 from functools import partial
 from typing import List, Iterator, Optional, Dict
 
-import time
 import typer
 from typer_config import use_yaml_config
 import numpy as np
@@ -48,7 +47,7 @@ from gluonts.transform import (
 from chronos import ChronosConfig, ChronosTokenizer
 
 from transformers import AutoModel
-from peft import LoraConfig, get_peft_model
+from peft import LoraConfig, get_peft_model, PeftModel
 
 app = typer.Typer(pretty_exceptions_enable=False)
 
@@ -711,20 +710,34 @@ def main(
     )
     log_on_main("Training", logger)
 
-    start_time = time.time()
     trainer.train()
-    end_time = time.time()
-
-    training_time = end_time - start_time
-    print(f"Actual trianing time: {training_time} seconds")
-
 
     if is_main_process():
         if lora:
-            model.base_model.config.save_pretrained(output_dir / "checkpoint-final")
-            model.base_model.save_pretrained(output_dir / "checkpoint-final")
+            # save LoRA adapter
+            log_on_main("Saving LoRA adapter", logger)
             (output_dir / "checkpoint-final/adapter").mkdir(parents=True, exist_ok=True)
-            model.save_pretrained(output_dir / "checkpoint-final/adapter")
+            trainer.model.save_pretrained(output_dir / "checkpoint-final/adapter") 
+
+            # save full model
+            log_on_main("Merging and saving full model", logger)
+            # Load base model
+            base_model = load_model(
+                lora=False, 
+                model_id=model_id,
+                model_type=model_type,
+                vocab_size=n_tokens,
+                random_init=random_init,
+                tie_embeddings=tie_embeddings,
+                pad_token_id=pad_token_id,
+                eos_token_id=eos_token_id,
+            )
+ 
+            merged_model = PeftModel.from_pretrained(base_model, output_dir / "checkpoint-final/adapter")
+            merged_model = merged_model.merge_and_unload()
+
+            merged_model.save_pretrained(output_dir / "checkpoint-final")
+
         else:
             model.save_pretrained(output_dir / "checkpoint-final")
         save_training_info(
