@@ -585,7 +585,7 @@ class ChronosPipeline(BaseChronosPipeline):
         import os
         pretrained_model_name_or_path = kwargs.get('pretrained_model_name_or_path', args[0] if args else None)
         if isinstance(pretrained_model_name_or_path, str) and os.path.isdir(pretrained_model_name_or_path):
-            adapter_config_path = os.path.join(pretrained_model_name_or_path, "adapter", "adapter_config.json")
+            adapter_config_path = os.path.join(pretrained_model_name_or_path, "adapter")
             
             # If an adapter configuration exists, attempt to load the adapter
             if os.path.exists(adapter_config_path):

@@ -723,7 +723,7 @@ def main(
         if lora:
             model.base_model.config.save_pretrained(output_dir / "checkpoint-final")
             model.base_model.save_pretrained(output_dir / "checkpoint-final")
-            (output_dir / "checkpoint-final/adaptor").mkdir(parents=True, exist_ok=True)
+            (output_dir / "checkpoint-final/adapter").mkdir(parents=True, exist_ok=True)
             model.save_pretrained(output_dir / "checkpoint-final/adapter")
         else:
             model.save_pretrained(output_dir / "checkpoint-final")
