@@ -14,6 +14,7 @@ from pathlib import Path
 from functools import partial
 from typing import List, Iterator, Optional, Dict
 
+import time
 import typer
 from typer_config import use_yaml_config
 import numpy as np
@@ -200,10 +201,11 @@ def load_model(
 
         # configuring LoRA
         lora_config = LoraConfig(
-            r=4,  # dimension of the LoRa matrix to be fine-tunned (higher values -> more expressive adaptations)
-            lora_alpha=32, # regulates the impact of the weights of the lora matrix on the predictions (higher values -> higher impact relative to the original weights)
-            lora_dropout=0.1,
-            bias = "none"
+            r=8,  # LoRA rank, controls the dimension of the low-rank matrices
+            lora_alpha=16,  # Scaling factor for the LoRA matrices' output
+            lora_dropout=0.1,  # Dropout probability to prevent overfitting
+            target_modules=["q", "v"],  # Modules to apply LoRA, typically query and value projection layers
+            bias="none"  # Indicates that biases are not modified
         )
 
         # applying LoRA
@@ -709,7 +711,13 @@ def main(
     )
     log_on_main("Training", logger)
 
+    start_time = time.time()
     trainer.train()
+    end_time = time.time()
+
+    training_time = end_time - start_time
+    print(f"Actual trianing time: {training_time} seconds")
+
 
     if is_main_process():
         if lora:
