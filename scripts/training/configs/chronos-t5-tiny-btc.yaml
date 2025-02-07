@@ -1,6 +1,6 @@
 training_data_paths:
 # - "/home/ubuntu/tsmixup-data.arrow"
-- "./data/test-data.arrow"
+- "./data/bitcoin-close-train.arrow"
 # probability:
 # - 0.9
 # - 0.1

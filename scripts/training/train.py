@@ -192,9 +192,8 @@ def load_model(
     model.config.pad_token_id = model.generation_config.pad_token_id = pad_token_id
     model.config.eos_token_id = model.generation_config.eos_token_id = eos_token_id
 
-    # Lora 
-    def get_lora_model(model):
-
+    # Lora
+    if lora:
         # freezing weights
         for param in model.parameters():
             param.requires_grad = False
@@ -209,12 +208,9 @@ def load_model(
 
         # applying LoRA
         lora_model = get_peft_model(model, lora_config)
-
         return lora_model
-
-    if lora:
-        return get_lora_model(model)
-    return model
+    else:
+        return model
 
 
 def has_enough_observations(
@@ -529,7 +525,7 @@ class ChronosDataset(IterableDataset, ShuffleMixin):
 def main(
     training_data_paths: str,
     probability: Optional[str] = None,
-    lora = False,
+    lora: bool = False,
     context_length: int = 512,
     prediction_length: int = 64,
     min_past: int = 64,
@@ -716,6 +712,10 @@ def main(
     trainer.train()
 
     if is_main_process():
+        if lora:
+            model.base_model.config.save_pretrained(output_dir / "checkpoint-final")
+            model.base_model.save_pretrained(output_dir / "checkpoint-final")
+
         model.save_pretrained(output_dir / "checkpoint-final")
         save_training_info(
             output_dir / "checkpoint-final", training_config=raw_training_config
