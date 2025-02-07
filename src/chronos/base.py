@@ -8,6 +8,7 @@
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union
+from peft import PeftModel, PeftConfig
 
 import torch
 
@@ -138,11 +139,34 @@ class BaseChronosPipeline(metaclass=PipelineRegistry):
         """
         from transformers import AutoConfig
 
+        use_peft = False
         torch_dtype = kwargs.get("torch_dtype", "auto")
         if torch_dtype != "auto" and isinstance(torch_dtype, str):
             kwargs["torch_dtype"] = cls.dtypes[torch_dtype]
 
-        config = AutoConfig.from_pretrained(pretrained_model_name_or_path, **kwargs)
+        # config = AutoConfig.from_pretrained(pretrained_model_name_or_path, **kwargs)
+        try:
+            # First, attempt to load the base model configuration
+            config = AutoConfig.from_pretrained(pretrained_model_name_or_path, **kwargs)
+            # Keep the original configuration validation unchanged ----------------------------
+            is_valid_config = hasattr(config, "chronos_pipeline_class") or hasattr(
+                config, "chronos_config"
+            )
+
+            if not is_valid_config:
+                raise ValueError("Not a Chronos config file")
+        except:
+            # If loading fails, try loading as a PEFT (LoRA) configuration
+            peft_config = PeftConfig.from_pretrained(pretrained_model_name_or_path)
+            
+            # Load the base model configuration from the PEFT adapter
+            config = AutoConfig.from_pretrained(peft_config.base_model_name_or_path)
+            
+            # Automatically enable PEFT mode
+            use_peft = True  
+            lora_adapter_name_or_path = pretrained_model_name_or_path
+        
+        # Keep the original configuration validation unchanged ----------------------------
         is_valid_config = hasattr(config, "chronos_pipeline_class") or hasattr(
             config, "chronos_config"
         )
@@ -159,6 +183,25 @@ class BaseChronosPipeline(metaclass=PipelineRegistry):
                 f"Trying to load unknown pipeline class: {pipeline_class_name}"
             )
 
-        return class_.from_pretrained(  # type: ignore[attr-defined]
-            pretrained_model_name_or_path, *model_args, **kwargs
+        # base model
+        model = class_.from_pretrained(  # type: ignore[attr-defined]
+            peft_config.base_model_name_or_path if use_peft else pretrained_model_name_or_path,
+            *model_args,
+            **kwargs
         )
+
+        if use_peft:
+            if lora_adapter_name_or_path is None:
+                lora_adapter_name_or_path = pretrained_model_name_or_path
+                
+            # load LoRA adaptor
+            model = PeftModel.from_pretrained(
+                model,
+                lora_adapter_name_or_path,
+                is_trainable=kwargs.get("is_trainable", False)
+            )
+            
+            # merge adaptor to base model
+            model = model.merge_and_unload()
+
+        return model
