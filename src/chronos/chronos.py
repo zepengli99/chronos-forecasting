@@ -597,6 +597,8 @@ class ChronosPipeline(BaseChronosPipeline):
                 
                 # Load the adapter model and merge it with the inner model
                 inner_model = PeftModel.from_pretrained(inner_model, pretrained_model_name_or_path)
+                inner_model = inner_model.merge_and_unload()
+                
 
         # Return the final model with the tokenizer and the merged inner model
         return cls(
