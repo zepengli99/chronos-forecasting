@@ -716,8 +716,8 @@ def main(
         if lora:
             # save LoRA adapter
             log_on_main("Saving LoRA adapter", logger)
-            (output_dir / "checkpoint-final/adapter").mkdir(parents=True, exist_ok=True)
-            trainer.model.save_pretrained(output_dir / "checkpoint-final/adapter") 
+            (output_dir / "adapter").mkdir(parents=True, exist_ok=True)
+            trainer.model.save_pretrained(output_dir / "adapter") 
 
             # save full model
             log_on_main("Merging and saving full model", logger)
@@ -733,12 +733,13 @@ def main(
                 eos_token_id=eos_token_id,
             )
  
-            merged_model = PeftModel.from_pretrained(base_model, output_dir / "checkpoint-final/adapter")
+            merged_model = PeftModel.from_pretrained(base_model, output_dir / "adapter")
             merged_model = merged_model.merge_and_unload()
 
             merged_model.save_pretrained(output_dir / "checkpoint-final")
 
         else:
+            log_on_main("Saving full model", logger)
             model.save_pretrained(output_dir / "checkpoint-final")
         save_training_info(
             output_dir / "checkpoint-final", training_config=raw_training_config

@@ -6,7 +6,6 @@
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Tuple, Union
-from peft import PeftModel, PeftConfig
 
 import torch
 import torch.nn as nn
@@ -565,42 +564,18 @@ class ChronosPipeline(BaseChronosPipeline):
         from ``transformers``.
         """
 
-        # Load the configuration using AutoConfig
         config = AutoConfig.from_pretrained(*args, **kwargs)
 
-        # Ensure the configuration contains 'chronos_config' which is specific to this model
         assert hasattr(config, "chronos_config"), "Not a Chronos config file"
 
-        # Create ChronosConfig from the loaded configuration
         chronos_config = ChronosConfig(**config.chronos_config)
 
-        # Depending on the model type in the configuration, load either seq2seq or causal model
         if chronos_config.model_type == "seq2seq":
             inner_model = AutoModelForSeq2SeqLM.from_pretrained(*args, **kwargs)
         else:
             assert chronos_config.model_type == "causal"
             inner_model = AutoModelForCausalLM.from_pretrained(*args, **kwargs)
 
-        # Check if there is an adapter configuration and load the adapter if available
-        import os
-        pretrained_model_name_or_path = kwargs.get('pretrained_model_name_or_path', args[0] if args else None)
-        if isinstance(pretrained_model_name_or_path, str) and os.path.isdir(pretrained_model_name_or_path):
-            adapter_config_path = os.path.join(pretrained_model_name_or_path, "adapter")
-            
-            # If an adapter configuration exists, attempt to load the adapter
-            if os.path.exists(adapter_config_path):
-                try:
-                    from peft import PeftModel
-                except ImportError:
-                    # Raise an error if the peft library is not installed
-                    raise ImportError("Loading adapter requires the 'peft' library. Please install it via pip install peft.")
-                
-                # Load the adapter model and merge it with the inner model
-                inner_model = PeftModel.from_pretrained(inner_model, adapter_config_path)
-                inner_model = inner_model.merge_and_unload()
-                
-
-        # Return the final model with the tokenizer and the merged inner model
         return cls(
             tokenizer=chronos_config.create_tokenizer(),
             model=ChronosModel(config=chronos_config, model=inner_model),
