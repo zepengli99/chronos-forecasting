@@ -1,2 +1,2 @@
 dataset,model,MASE,WQL
-bitcoin_test,zepengli99/chronos-t5-tiny-btc,0.17587614222304646,0.004840670914633654
+bitcoin_test,./output/run-3/checkpoint-final/,0.1730463081906807,0.003900532472257792

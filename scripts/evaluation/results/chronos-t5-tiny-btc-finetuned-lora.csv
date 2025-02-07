@@ -1,2 +1,2 @@
 dataset,model,MASE,WQL
-bitcoin_test,zepengli99/chronos-t5-tiny-btc-lora,10.662484794660905,0.288306695348728
+bitcoin_test,./output/run-1/checkpoint-final/,0.15994445096079984,0.00422369972596812
